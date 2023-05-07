@@ -9,8 +9,13 @@
     ai画 [prompt] | [negative prompt]：使用stable-diffusion绘画
     查看sd模型：查看当前的sd模型，以及所有模型列表
     切换sd模型 [model_id]：切换到某个sd模型
+参数：
+    <[width]x[height]>：指定图片大小，如<512x768>
+    <s:[steps]>：指定步长，如<s:30>
+    <t:[translate]>：翻译成英文，如<t:动人>
 示例：
     ai画 miku, ultra detailed | (low quality:1.4), nsfw:1.5
+    ai画 <512x768>, <s:30>, <t:动人>, miku, ultra detailed
     切换sd模型 2
 ```
 # 使用
@@ -31,6 +36,11 @@ pip install webuiapi
 
 # 更新
 
+**2023/5/7**
+
+- 新增支持指定图片大小、步长
+- 新增翻译插件
+
 **2023/5/5**
 
-新增切换/查看sd模型功能
+- 新增切换/查看sd模型功能

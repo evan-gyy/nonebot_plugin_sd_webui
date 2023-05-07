@@ -24,7 +24,7 @@ usage：
         查看sd模型：查看当前的sd模型，以及所有模型列表
         切换sd模型 [model_id]：切换到某个sd模型
     参数：
-        <[width]x[height]]>：指定图片大小，如<512x768>
+        <[width]x[height]>：指定图片大小，如<512x768>
         <s:[steps]>：指定步长，如<s:30>
         <t:[translate]>：翻译成英文，如<t:动人>
     示例：
@@ -66,7 +66,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     if len(message) == 0:
         return
 
-    trans = re.search('<t:(.*)>', message)
+    trans = re.search('<t[:：]([^>]+)>', message)
     if trans:
         async with AsyncClient(verify=False, follow_redirects=True) as c:
             resp = await c.post(
@@ -151,8 +151,8 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
 def t2i(api, prompt, n=None):
     max_size = config.max_size
 
-    size = re.search('<(\d+)x(\d+)>', prompt)
-    step = re.search('<s:(\d+)>', prompt)
+    size = re.search('<(\d+)[x×](\d+)>', prompt)
+    step = re.search('<s[:：](\d+)>', prompt)
 
     if size:
         width = min(abs(int(size.group(1))), max_size)
