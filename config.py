@@ -13,6 +13,9 @@ class Config(BaseModel, extra=Extra.ignore):
     negative_prompt = 'ugly, nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry'
     sampler = 'DPM++ 2M'
     steps = 20
+    max_steps = 50
+    max_size = 1024
+    default_size = 512
 
 
 driver = get_driver()

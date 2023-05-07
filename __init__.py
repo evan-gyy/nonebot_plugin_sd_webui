@@ -1,5 +1,6 @@
 from .config import config
 import asyncio
+import re
 import os
 import sys
 import time
@@ -9,6 +10,7 @@ from nonebot import on_command, on_keyword
 from nonebot.adapters.onebot.v11 import Bot, Event, MessageSegment, Message, MessageEvent, GroupMessageEvent
 from nonebot.log import logger
 from nonebot.params import CommandArg
+from httpx import AsyncClient
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -21,8 +23,13 @@ usage：
         ai画 [prompt] | [negative prompt]：使用stable-diffusion绘画
         查看sd模型：查看当前的sd模型，以及所有模型列表
         切换sd模型 [model_id]：切换到某个sd模型
+    参数：
+        <[width]x[height]]>：指定图片大小，如<512x768>
+        <s:[steps]>：指定步长，如<s:30>
+        <t:[translate]>：翻译成英文，如<t:动人>
     示例：
         ai画 miku, ultra detailed | (low quality:1.4), nsfw:1.5
+        ai画 <512x768>, <s:30>, <t:动人>, miku, ultra detailed
         切换sd模型 2
 """.strip()
 __plugin_des__ = "sd_webui_plugin"
@@ -58,8 +65,22 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     message = args.extract_plain_text()
     if len(message) == 0:
         return
-    if '重载配置' in message:
-        return
+
+    trans = re.search('<t:(.*)>', message)
+    if trans:
+        async with AsyncClient(verify=False, follow_redirects=True) as c:
+            resp = await c.post(
+                "https://hf.space/embed/mikeee/gradio-gtr/+/api/predict", 
+                json={"data": [trans.group(1), "auto", "en"]}
+            )
+            if resp.status_code != 200:
+                await sd.finish(f"翻译接口调用失败\n错误代码{resp.status_code},{resp.text}")
+
+            result = resp.json()
+            result = result["data"][0]
+
+            message = message.replace(trans.group(), result)
+            await sd.send(f"翻译结果：\n{result}")
 
     if '|' in message:
         prompt = message.split('|')[0]
@@ -76,8 +97,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     image = await loop.run_in_executor(None, t2i,
                                        api,
                                        prompt,
-                                       negative_prompt,
-                                       config.steps)
+                                       negative_prompt)
     delta = round(time.time() - start, 3)
     logger.success(f'成功返回图片，用时{delta} s')
 
@@ -128,12 +148,37 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
         change_model.send('请输入模型序号')
 
 
-def t2i(api, p, n=None, s=20):
+def t2i(api, prompt, n=None):
+    max_size = config.max_size
+
+    size = re.search('<(\d+)x(\d+)>', prompt)
+    step = re.search('<s:(\d+)>', prompt)
+
+    if size:
+        width = min(abs(int(size.group(1))), max_size)
+        height = min(abs(int(size.group(2))), max_size)
+        prompt = prompt.replace(size.group(), '')
+    else:
+        width = config.default_size
+        height = config.default_size
+
+    if step:
+        steps = min(abs(int(step.group(1))), config.max_steps)
+        prompt = prompt.replace(step.group(), '')
+    else:
+        steps = config.steps
+
+    if size or step:
+        logger.info(f'final prompt: {prompt}')
+
     r = api.txt2img(
-        prompt=p,
+        prompt=prompt,
         negative_prompt=n,
-        steps=s,
+        height=height, 
+        width=width,
+        steps=steps,
     )
+
     return r.image
 
 
