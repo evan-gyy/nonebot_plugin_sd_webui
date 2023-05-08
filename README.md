@@ -7,6 +7,7 @@
 ```
 指令：
     ai画 [prompt] | [negative prompt]：使用stable-diffusion绘画
+    ai图生图 [prompt] | [negative prompt] [image]：根据输入的图片绘画
     查看sd模型：查看当前的sd模型，以及所有模型列表
     切换sd模型 [model_id]：切换到某个sd模型
 参数：
@@ -35,6 +36,11 @@ pip install webuiapi
 
 
 # 更新
+
+**2023/5/8**
+
+- 新增图生图功能
+- 支持翻译重连
 
 **2023/5/7**
 
