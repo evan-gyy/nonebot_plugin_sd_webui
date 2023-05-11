@@ -10,6 +10,7 @@
     ai图生图 [prompt] | [negative prompt] [image]：根据输入的图片绘画
     查看sd模型：查看当前的sd模型，以及所有模型列表
     切换sd模型 [model_id]：切换到某个sd模型
+    查看lora ?[标签] ?[keyword]：查看可用的lora模型，支持关键词搜索、自动打tag
 参数：
     <[width]x[height]>：指定图片大小，如<512x768>
     <s:[steps]>：指定步长，如<s:30>
@@ -36,6 +37,10 @@ pip install webuiapi
 
 
 # 更新
+
+**2023/5/11**
+
+- 新增查看lora功能，支持关键词搜索、自动打tag
 
 **2023/5/8**
 
