@@ -28,6 +28,7 @@ usage：
         ai图生图 [prompt] | [negative prompt] [image]：根据输入的图片绘画
         查看sd模型：查看当前的sd模型，以及所有模型列表
         切换sd模型 [model_id]：切换到某个sd模型
+        查看lora ?[标签] ?[keyword]：查看可用的lora模型，支持关键词搜索、自动打tag
     参数：
         <[width]x[height]>：指定图片大小，如<512x768>
         <s:[steps]>：指定步长，如<s:30>
@@ -54,15 +55,16 @@ __plugin_cd_limit__ = {
 }
 
 api = webuiapi.WebUIApi(host=config.api_host,
-                            port=config.api_port,
-                            sampler=config.sampler,
-                            steps=config.steps
-                            )
+                        port=config.api_port,
+                        sampler=config.sampler,
+                        steps=config.steps
+                        )
 
 sd = on_command("ai画", priority=5, block=True)
 sd_i2i = on_command("ai图生图", priority=5, block=True)
 check_model = on_command("查看sd模型", priority=5, block=True)
 change_model = on_command("切换sd模型", priority=5, block=True)
+check_lora = on_command("查看lora", priority=5, block=True)
 
 
 def parse_image(key: str):
@@ -108,7 +110,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
 
 
 @sd_i2i.handle()
-async def _(bot: Bot, event: MessageEvent, state: T_State,args: Message = CommandArg()):
+async def _(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):
     prompt = args.extract_plain_text().strip()
     if prompt:
         state['prompt'] = prompt
@@ -124,7 +126,7 @@ async def _(bot: Bot,
             state: T_State,
             message: str = ArgStr("prompt"),
             img: Message = Arg("img")
-):
+            ):
     url = get_message_img(img)[0]
     temp = BytesIO(requests.get(url).content)
     img = Image.open(temp)
@@ -133,7 +135,7 @@ async def _(bot: Bot,
     prompt, negative_prompt, width, height, steps, trans_res = await prompt_wrapper(message)
     if trans_res is not None:
         await sd_i2i.send(f"翻译结果：\n{trans_res}")
-    
+
     start = time.time()
     loop = asyncio.get_event_loop()
     image = await loop.run_in_executor(None, i2i,
@@ -146,7 +148,7 @@ async def _(bot: Bot,
                                        steps)
     delta = round(time.time() - start, 3)
     logger.success(f'成功返回图片，用时{delta} s')
-    
+
     buffered = BytesIO()
     image.save(buffered, format='png')
     msg = Message(f"用时：{delta} s")
@@ -158,7 +160,8 @@ async def _(bot: Bot,
 async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     old_model = api.util_get_current_model().split('.')[0]
     models = api.util_get_model_names()
-    models = '\n'.join([f"{i}. {m.split('.')[0]}" for i, m in enumerate(models)])
+    models = '\n'.join(
+        [f"{i}. {m.split('.')[0]}" for i, m in enumerate(models)])
     text = f"当前模型：\n{old_model}\n\n模型列表：\n{models}"
     await check_model.send(text)
 
@@ -192,6 +195,40 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
         change_model.send('请输入模型序号')
 
 
+@check_lora.handle()
+async def _(bot: Bot, event: Event, args: Message = CommandArg()):
+    lora_path = config.lora_path
+    names = sorted(os.listdir(lora_path))
+    arg = args.extract_plain_text()
+    tag = True if '标签' in arg else False
+    arg = arg.replace('标签', '').strip()
+
+    if arg:
+        match = [l for l in names if arg.lower() in l.lower()]
+        if match:
+            names = match
+    if tag:
+        models = [f"{i+1}. <lora:{l.split('.')[0]}:0.7>" for i, l in enumerate(names)]
+    else:
+        models = [f"{i+1}. {l.split('.')[0]}" for i, l in enumerate(names)]
+    text = "可用Lora列表：\n" + '\n'.join(models)
+
+    if len(names) > 10 and isinstance(event, GroupMessageEvent):
+        messages = [{
+            "type": "node",
+            "data": {
+                "name": config.bot_name,
+                "uin": f"{bot.self_id}",
+                "content": [
+                    {"type": "text", "data": {"text": text}},
+                ],
+            },
+        }]
+        await bot.send_group_forward_msg(group_id=event.group_id, messages=messages)
+    else:
+        await check_lora.send(text)
+
+
 async def prompt_wrapper(message):
     trans = re.search('<t[:：]([^>]+)>', message)
     if trans:
@@ -201,14 +238,15 @@ async def prompt_wrapper(message):
 
     if '|' in message:
         prompt = message.split('|')[0]
-        negative_prompt = ''.join(message.split('|')[1:]) + ',' + config.negative_prompt
+        negative_prompt = ''.join(message.split(
+            '|')[1:]) + ',' + config.negative_prompt
     else:
         prompt = message
         negative_prompt = config.negative_prompt
-    
+
     logger.info('prompt: %s' % prompt)
     logger.info('negative prompt: %s' % negative_prompt)
-    
+
     max_size = config.max_size
     size = re.search('<(\d+)[x×](\d+)>', prompt)
     step = re.search('<s[:：](\d+)>', prompt)
@@ -229,7 +267,7 @@ async def prompt_wrapper(message):
 
     if size or step:
         logger.info(f'final prompt: {prompt}')
-    
+
     return prompt, negative_prompt, width, height, steps, trans_res
 
 
@@ -239,7 +277,7 @@ async def translator(message, trans):
         for i in range(5):
             try:
                 resp = await c.post(
-                    "https://hf.space/embed/mikeee/gradio-gtr/+/api/predict", 
+                    "https://hf.space/embed/mikeee/gradio-gtr/+/api/predict",
                     json={"data": [trans.group(1), "auto", "en"]}
                 )
                 if resp.status_code != 200:
@@ -264,7 +302,7 @@ def t2i(api, prompt, n, width, height, steps):
         prompt=prompt,
         negative_prompt=n,
         width=width,
-        height=height, 
+        height=height,
         steps=steps,
     )
     return r.image
@@ -276,7 +314,7 @@ def i2i(api, image, prompt, n, width, height, steps):
         prompt=prompt,
         negative_prompt=n,
         width=width,
-        height=height, 
+        height=height,
         steps=steps,
     )
     return r.image
@@ -288,7 +326,7 @@ def set_model(model):
         return 'success'
     except Exception as e:
         return str(e)
-    
+
 
 def img2bytes(img):
     img_bytes = BytesIO()
