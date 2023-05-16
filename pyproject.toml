@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "nonebot-plugin-sd-webui"
+version = "0.1.0"
+description = ""
+authors = ["evan-gyy <evangu1104@foxmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "nonebot_plugin_sd_webui"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.30.0"
+webuiapi = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

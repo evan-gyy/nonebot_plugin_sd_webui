@@ -38,7 +38,7 @@ nonebot绘画插件，基于sd-webui实现，支持指定模型、参数等
 ## 🔧 开发环境
 Nonebot2：2.0.0rc3  
 python：3.8.13  
-操作系统：Windows 10、Ubuntu 22.04 
+操作系统：Windows 10、Ubuntu 22.04  
 编辑器：VS Code  
 
 ## 💿 安装  
