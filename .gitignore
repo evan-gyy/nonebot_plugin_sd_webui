@@ -1,2 +1,4 @@
 sd_test.py
 __pycache__/*
+dist/
+build/
