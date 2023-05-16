@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-sd-webui"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["evan-gyy <evangu1104@foxmail.com>"]
 license = "MIT"
@@ -9,8 +9,11 @@ packages = [{include = "nonebot_plugin_sd_webui"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-requests = "^2.30.0"
-webuiapi = "^0.7.0"
+nonebot2 = "^2.0.0-beta.1"
+nonebot-plugin-guild-patch ="*"
+nonebot-adapter-onebot = { version = "^2.0.0-beta.1", optional = true }
+webuiapi = "*"
+requests = "*"
 
 [build-system]
 requires = ["poetry-core"]
