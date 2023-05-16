@@ -26,7 +26,7 @@
 启动sd-webui环境，并打开api，具体配置请参考[官方仓库](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
 
 ```bash
-python launch.py --api
+python launch.py --api --listen
 ```
 
 安装python依赖
